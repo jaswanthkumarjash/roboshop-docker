@@ -1,0 +1,94 @@
+services:
+  redis:
+    image: redis:7.0
+    container_name: redis
+    volumes:
+      - redis:/data
+
+  mongodb:
+    build: ./mongodb
+    image: jaswanthdocker12/mongodb:v1
+    container_name: mongodb
+    volumes:
+      - mongodb:/data/db
+
+  mysql:
+    build: ./mysql
+    image: jaswanthdocker12/mysql:v1
+    container_name: mysql
+    volumes:
+      - mysql:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:3
+    container_name: rabbitmq
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER= roboshop
+      - RABBITMQ_DEFAULT_PASS= roboshop123
+
+  catalogue:
+    build: ./catalogue
+    image: jaswanthdocker12/catalogue:v1
+    container_name: catalogue
+    depends_on:
+      - mongodb
+
+  cart:
+    build: ./cart
+    image: jaswanthdocker12/cart:v1
+    container_name: cart
+    depends_on:
+      - redis
+      - catalogue
+
+  user:
+    build: ./user
+    image: jaswanthdocker12/user:v1
+    container_name: user
+    depends_on:
+      - mongodb
+      - redis
+
+  shipping:
+    build: ./shipping
+    image: jaswanthdocker12/shipping:v1
+    container_name: shipping
+    depends_on:
+      - mysql
+      - cart
+
+  payment:
+    build: ./payment
+    image: jaswanthdocker12/payment:v1
+    container_name: payment
+    depends_on:
+      - rabbitmq
+      - cart
+      - user
+
+  frontend:
+    build: ./frontend
+    image: jaswanthdocker12/frontend:v1
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - catalogue
+      - cart
+      - user
+      - shipping
+      - payment
+
+networks:
+  default:
+    driver: bridge
+    name: roboshop
+    external: false
+
+volumes:
+  redis:
+  mongodb:
+  mysql:
+  rabbitmq:
